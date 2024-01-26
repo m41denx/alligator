@@ -60,17 +60,17 @@ type ServerChange struct {
 
 // ServerLimits are the system resource limits for a server
 type ServerLimits struct {
-	Memory int `json:"memory,omitempty"`
-	Swap   int `json:"swap,omitempty"`
-	Disk   int `json:"disk,omitempty"`
-	Io     int `json:"io,omitempty"`
-	CPU    int `json:"cpu,omitempty"`
+	Memory int `json:"memory"`
+	Swap   int `json:"swap"`
+	Disk   int `json:"disk"`
+	Io     int `json:"io"`
+	CPU    int `json:"cpu"`
 }
 
 // ServerFeatureLimits this is the limit on Databases and extra Allocations on a server
 type ServerFeatureLimits struct {
-	Databases   int `json:"databases,omitempty"`
-	Allocations int `json:"allocations,omitempty"`
+	Databases   int `json:"databases"`
+	Allocations int `json:"allocations"`
 }
 
 // ServerContainer is the config on the docker container the server runs in.
