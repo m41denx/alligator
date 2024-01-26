@@ -82,7 +82,7 @@ func NewApp(panelURL string, appToken string) (config *AppConfig, err error) {
 	config.AppToken = appToken
 
 	// validate the server is up and available
-	if _, err = config.getUserByPage(1); err != nil {
+	if _, err = config.GetUsers(); err != nil {
 		return config, err
 	}
 

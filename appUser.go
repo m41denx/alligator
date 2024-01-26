@@ -110,7 +110,7 @@ func (config *AppConfig) GetUser(userID int) (user User, err error) {
 // The externalID is a string as that is what the panel requires.
 func (config *AppConfig) GetUserByExternal(externalID string) (user User, err error) {
 	// get json bytes from the panel.
-	userBytes, err := config.queryApplicationAPI(fmt.Sprintf("users/%s", externalID), "get", nil)
+	userBytes, err := config.queryApplicationAPI(fmt.Sprintf("users/external/%s", externalID), "get", nil)
 	if err != nil {
 		return
 	}
