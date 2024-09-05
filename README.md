@@ -13,9 +13,9 @@ go get -u github.com/m41denx/alligator
 ---
 
 
-## So, what's new?
+## 🔥 So, what's new?
 
-### ⬆⬇ Support for Filters, Include and Endpoint-specific parameters
+### ✨ Support for Filters, Include and Endpoint-specific parameters
 *Including support for extended struct fields
 - **Example for [List Users](https://dashflo.net/docs/api/pterodactyl/v1/#req_5703791f721f4b50bb0318cf19e2262d) endpoint**
 ```go
@@ -54,7 +54,7 @@ package main
 
 **More examples at [📁 _examples](_examples)**
 
-## What's done?
+## 📝 What's done?
 - [ ] App API
   - [X] Options
   - [ ] Database endpoint support
@@ -65,7 +65,9 @@ package main
     - [ ] Extended eggs details (nest, servers, config, script, variables)
   - [X] Extended user details (servers)
   - [X] Extended nodes details (allocations, location, servers)
-  - [ ] Extended allocations details (node, server)
-  - [ ] Extended location details (nodes, servers)
-  - [ ] Extended servers details (allocations, user, subusers, pack, nest, egg, variables, location, node, databases)
-  - [ ] Additional methods like `/{server}/reinstall` and `/{server}/force`
+  - [X] Extended allocations details (node, server)
+  - [X] Extended location details (nodes, servers)
+  - [ ] Extended servers details (allocations+, user+, subusers+, nest, egg, variables, location+, node+, databases)
+  - [X] Additional methods like `/{server}/reinstall` and `/{server}/force`
+- [ ] Client API
+  - [ ] What is this goofy ahh infinite documentation...

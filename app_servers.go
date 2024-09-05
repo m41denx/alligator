@@ -20,8 +20,8 @@ type AppServer struct {
 	Suspended     bool          `json:"suspended"`
 	Limits        Limits        `json:"limits"`
 	FeatureLimits FeatureLimits `json:"feature_limits"`
-	User          int           `json:"user"`
-	Node          int           `json:"node"`
+	UserID        int           `json:"user"`
+	NodeID        int           `json:"node"`
 	Allocation    int           `json:"allocation"`
 	Nest          int           `json:"nest"`
 	Egg           int           `json:"egg"`
@@ -31,8 +31,13 @@ type AppServer struct {
 		Installed      int                    `json:"installed"`
 		Environment    map[string]interface{} `json:"environment"`
 	} `json:"container"`
-	CreatedAt *time.Time `json:"created_at"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	CreatedAt   *time.Time    `json:"created_at"`
+	UpdatedAt   *time.Time    `json:"updated_at,omitempty"`
+	Allocations []*Allocation `json:"-"`
+	UserObject  *User         `json:"-"`
+	Subusers    []*User       `json:"-"`
+	Location    *Location     `json:"-"`
+	NodeObject  *Node         `json:"-"`
 }
 
 func (s *AppServer) BuildDescriptor() *ServerBuildDescriptor {
@@ -50,7 +55,7 @@ func (s *AppServer) DetailsDescriptor() *ServerDetailsDescriptor {
 	return &ServerDetailsDescriptor{
 		ExternalID:  s.ExternalID,
 		Name:        s.Name,
-		User:        s.User,
+		User:        s.UserID,
 		Description: s.Description,
 	}
 }
@@ -62,6 +67,51 @@ func (s *AppServer) StartupDescriptor() *ServerStartupDescriptor {
 		Egg:         s.Egg,
 		Image:       s.Container.Image,
 	}
+}
+
+// TODO: nest
+// TODO: egg
+// TODO: variables
+// TODO: databases
+type ResponseServer struct {
+	*AppServer
+	Relationships struct {
+		Allocations struct {
+			Data []struct {
+				Attributes *Allocation `json:"attributes"`
+			} `json:"data"`
+		} `json:"allocations"`
+		User struct {
+			Attributes *User `json:"attributes"`
+		} `json:"user"`
+		Subusers struct {
+			Data []struct {
+				Attributes *User `json:"attributes"`
+			} `json:"data"`
+		} `json:"subusers"`
+		Location struct {
+			Attributes *Location `json:"attributes"`
+		} `json:"location"`
+		Node struct {
+			Attributes *Node `json:"attributes"`
+		} `json:"node"`
+	} `json:"relationships"`
+}
+
+func (r *ResponseServer) getServer() *AppServer {
+	server := r.AppServer
+	server.Allocations = make([]*Allocation, 0)
+	for _, a := range r.Relationships.Allocations.Data {
+		server.Allocations = append(server.Allocations, a.Attributes)
+	}
+	server.UserObject = r.Relationships.User.Attributes
+	server.Subusers = make([]*User, 0)
+	for _, s := range r.Relationships.Subusers.Data {
+		server.Subusers = append(server.Subusers, s.Attributes)
+	}
+	server.Location = r.Relationships.Location.Attributes
+	server.NodeObject = r.Relationships.Node.Attributes
+	return server
 }
 
 func (a *Application) ListServers() ([]*AppServer, error) {
@@ -78,7 +128,7 @@ func (a *Application) ListServers() ([]*AppServer, error) {
 
 	var model struct {
 		Data []struct {
-			Attributes *AppServer `json:"attributes"`
+			Attributes *ResponseServer `json:"attributes"`
 		} `json:"data"`
 	}
 	if err = json.Unmarshal(buf, &model); err != nil {
@@ -87,7 +137,7 @@ func (a *Application) ListServers() ([]*AppServer, error) {
 
 	servers := make([]*AppServer, 0, len(model.Data))
 	for _, s := range model.Data {
-		servers = append(servers, s.Attributes)
+		servers = append(servers, s.Attributes.getServer())
 	}
 
 	return servers, nil
@@ -110,13 +160,13 @@ func (a *Application) GetServer(id int, opts ...options.GetServerOptions) (*AppS
 	}
 
 	var model struct {
-		Attributes AppServer `json:"attributes"`
+		Attributes ResponseServer `json:"attributes"`
 	}
 	if err = json.Unmarshal(buf, &model); err != nil {
 		return nil, err
 	}
 
-	return &model.Attributes, nil
+	return model.Attributes.getServer(), nil
 }
 
 func (a *Application) GetServerExternal(id string, opts ...options.GetServerOptions) (*AppServer, error) {
@@ -136,13 +186,13 @@ func (a *Application) GetServerExternal(id string, opts ...options.GetServerOpti
 	}
 
 	var model struct {
-		Attributes AppServer `json:"attributes"`
+		Attributes ResponseServer `json:"attributes"`
 	}
 	if err = json.Unmarshal(buf, &model); err != nil {
 		return nil, err
 	}
 
-	return &model.Attributes, nil
+	return model.Attributes.getServer(), nil
 }
 
 type AllocationDescriptor struct {
@@ -331,6 +381,17 @@ func (a *Application) SuspendServer(id int) error {
 
 func (a *Application) UnsuspendServer(id int) error {
 	req := a.newRequest("POST", fmt.Sprintf("/servers/%d/unsuspend", id), nil)
+	res, err := a.Http.Do(req)
+	if err != nil {
+		return err
+	}
+
+	_, err = validate(res)
+	return err
+}
+
+func (a *Application) ReinstallServer(id int) error {
+	req := a.newRequest("POST", fmt.Sprintf("/servers/%d/reinstall", id), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return err

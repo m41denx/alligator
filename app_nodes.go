@@ -154,39 +154,6 @@ type DeployableNodesDescriptor struct {
 	LocationsIDs []int `json:"location_ids,omitempty"`
 }
 
-func (a *Application) GetDeployableNodes(fields DeployableNodesDescriptor) ([]*Node, error) {
-	data, _ := json.Marshal(fields)
-	body := bytes.Buffer{}
-	body.Write(data)
-
-	req := a.newRequest("GET", "/nodes/deployable", &body)
-	res, err := a.Http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	buf, err := validate(res)
-	if err != nil {
-		return nil, err
-	}
-
-	var model struct {
-		Data []struct {
-			Attributes *Node `json:"attributes"`
-		} `json:"data"`
-	}
-	if err = json.Unmarshal(buf, &model); err != nil {
-		return nil, err
-	}
-
-	nodes := make([]*Node, 0, len(model.Data))
-	for _, n := range model.Data {
-		nodes = append(nodes, n.Attributes)
-	}
-
-	return nodes, nil
-}
-
 type NodeConfiguration struct {
 	Debug   bool   `json:"debug"`
 	UUID    string `json:"uuid"`
@@ -336,12 +303,33 @@ func (a *Application) DeleteNode(id int) error {
 }
 
 type Allocation struct {
-	ID       int    `json:"id"`
-	IP       string `json:"ip"`
-	Alias    string `json:"alias,omitempty"`
-	Port     int32  `json:"port"`
-	Notes    string `json:"notes,omitempty"`
-	Assigned bool   `json:"assigned"`
+	ID       int        `json:"id"`
+	IP       string     `json:"ip"`
+	Alias    string     `json:"alias,omitempty"`
+	Port     int32      `json:"port"`
+	Notes    string     `json:"notes,omitempty"`
+	Assigned bool       `json:"assigned"`
+	Node     *Node      `json:"-"`
+	Server   *AppServer `json:"-"`
+}
+
+type ResponseAllocation struct {
+	*Allocation
+	Relationships struct {
+		Node struct {
+			Attributes *Node `json:"attributes"`
+		} `json:"node"`
+		Server struct {
+			Attributes *AppServer `json:"attributes"`
+		} `json:"server"`
+	} `json:"relationships"`
+}
+
+func (r *ResponseAllocation) getAllocation() *Allocation {
+	alloc := r.Allocation
+	alloc.Node = r.Relationships.Node.Attributes
+	alloc.Server = r.Relationships.Server.Attributes
+	return alloc
 }
 
 func (a *Application) ListNodeAllocations(node int, opts ...options.ListNodeAllocationsOptions) ([]*Allocation, error) {
@@ -362,7 +350,7 @@ func (a *Application) ListNodeAllocations(node int, opts ...options.ListNodeAllo
 
 	var model struct {
 		Data []struct {
-			Attributes *Allocation `json:"attributes"`
+			Attributes *ResponseAllocation `json:"attributes"`
 		} `json:"data"`
 	}
 	if err = json.Unmarshal(buf, &model); err != nil {
@@ -370,8 +358,8 @@ func (a *Application) ListNodeAllocations(node int, opts ...options.ListNodeAllo
 	}
 
 	allocs := make([]*Allocation, 0, len(model.Data))
-	for _, a := range model.Data {
-		allocs = append(allocs, a.Attributes)
+	for _, alloc := range model.Data {
+		allocs = append(allocs, alloc.Attributes.getAllocation())
 	}
 
 	return allocs, nil
