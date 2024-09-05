@@ -10,25 +10,28 @@ import (
 )
 
 type Node struct {
-	ID                 int        `json:"id"`
-	Name               string     `json:"name"`
-	Description        string     `json:"description"`
-	LocationID         int        `json:"location_id"`
-	Public             bool       `json:"public"`
-	FQDN               string     `json:"fqdn"`
-	Scheme             string     `json:"scheme"`
-	BehindProxy        bool       `json:"behind_proxy"`
-	Memory             int64      `json:"memory"`
-	MemoryOverallocate int64      `json:"memory_overallocate"`
-	Disk               int64      `json:"disk"`
-	DiskOverallocate   int64      `json:"disk_overallocate"`
-	DaemonBase         string     `json:"daemon_base"`
-	DaemonSftp         int32      `json:"daemon_sftp"`
-	DaemonListen       int32      `json:"daemon_listen"`
-	MaintenanceMode    bool       `json:"maintenance_mode"`
-	UploadSize         int64      `json:"upload_size"`
-	CreatedAt          *time.Time `json:"created_at"`
-	UpdatedAt          *time.Time `json:"updated_at,omitempty"`
+	ID                 int           `json:"id"`
+	Name               string        `json:"name"`
+	Description        string        `json:"description"`
+	LocationID         int           `json:"location_id"`
+	Public             bool          `json:"public"`
+	FQDN               string        `json:"fqdn"`
+	Scheme             string        `json:"scheme"`
+	BehindProxy        bool          `json:"behind_proxy"`
+	Memory             int64         `json:"memory"`
+	MemoryOverallocate int64         `json:"memory_overallocate"`
+	Disk               int64         `json:"disk"`
+	DiskOverallocate   int64         `json:"disk_overallocate"`
+	DaemonBase         string        `json:"daemon_base"`
+	DaemonSftp         int32         `json:"daemon_sftp"`
+	DaemonListen       int32         `json:"daemon_listen"`
+	MaintenanceMode    bool          `json:"maintenance_mode"`
+	UploadSize         int64         `json:"upload_size"`
+	CreatedAt          *time.Time    `json:"created_at"`
+	UpdatedAt          *time.Time    `json:"updated_at,omitempty"`
+	Location           *Location     `json:"-"`
+	Allocations        []*Allocation `json:"-"`
+	Servers            []*AppServer  `json:"-"`
 }
 
 func (n *Node) UpdateDescriptor() *UpdateNodeDescriptor {
@@ -51,6 +54,39 @@ func (n *Node) UpdateDescriptor() *UpdateNodeDescriptor {
 	}
 }
 
+type ResponseNode struct {
+	*Node
+	Relationships struct {
+		Allocations struct {
+			Data []struct {
+				Attributes *Allocation `json:"attributes"`
+			} `json:"data"`
+		} `json:"allocations"`
+		Location struct {
+			Attributes *Location `json:"attributes"`
+		} `json:"location"`
+		Servers struct {
+			Data []struct {
+				Attributes *AppServer `json:"attributes"`
+			} `json:"data"`
+		} `json:"servers"`
+	} `json:"relationships"`
+}
+
+func (r *ResponseNode) getNode() *Node {
+	node := r.Node
+	node.Allocations = make([]*Allocation, 0)
+	for _, a := range r.Relationships.Allocations.Data {
+		node.Allocations = append(node.Allocations, a.Attributes)
+	}
+	node.Location = r.Relationships.Location.Attributes
+	node.Servers = make([]*AppServer, 0)
+	for _, s := range r.Relationships.Servers.Data {
+		node.Servers = append(node.Servers, s.Attributes)
+	}
+	return node
+}
+
 func (a *Application) ListNodes(opts ...options.ListNodesOptions) ([]*Node, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -67,9 +103,10 @@ func (a *Application) ListNodes(opts ...options.ListNodesOptions) ([]*Node, erro
 		return nil, err
 	}
 
+	// Holllllly shiii
 	var model struct {
 		Data []struct {
-			Attributes *Node `json:"attributes"`
+			Attributes *ResponseNode `json:"attributes"`
 		} `json:"data"`
 	}
 	if err = json.Unmarshal(buf, &model); err != nil {
@@ -78,7 +115,7 @@ func (a *Application) ListNodes(opts ...options.ListNodesOptions) ([]*Node, erro
 
 	nodes := make([]*Node, 0, len(model.Data))
 	for _, n := range model.Data {
-		nodes = append(nodes, n.Attributes)
+		nodes = append(nodes, n.Attributes.getNode())
 	}
 
 	return nodes, nil
@@ -101,13 +138,13 @@ func (a *Application) GetNode(id int, opts ...options.GetNodeOptions) (*Node, er
 	}
 
 	var model struct {
-		Attributes Node `json:"attributes"`
+		Attributes *ResponseNode `json:"attributes"`
 	}
 	if err = json.Unmarshal(buf, &model); err != nil {
 		return nil, err
 	}
 
-	return &model.Attributes, nil
+	return model.Attributes.getNode(), nil
 }
 
 type DeployableNodesDescriptor struct {

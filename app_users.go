@@ -9,18 +9,19 @@ import (
 )
 
 type User struct {
-	ID         int        `json:"id"`
-	ExternalID string     `json:"external_id"`
-	UUID       string     `json:"uuid"`
-	Username   string     `json:"username"`
-	Email      string     `json:"email"`
-	FirstName  string     `json:"first_name"`
-	LastName   string     `json:"last_name"`
-	Language   string     `json:"language"`
-	RootAdmin  bool       `json:"root_admin"`
-	TwoFactor  bool       `json:"2fa"`
-	CreatedAt  *time.Time `json:"created_at"`
-	UpdatedAt  *time.Time `json:"updated_at,omitempty"`
+	ID         int          `json:"id"`
+	ExternalID string       `json:"external_id"`
+	UUID       string       `json:"uuid"`
+	Username   string       `json:"username"`
+	Email      string       `json:"email"`
+	FirstName  string       `json:"first_name"`
+	LastName   string       `json:"last_name"`
+	Language   string       `json:"language"`
+	RootAdmin  bool         `json:"root_admin"`
+	TwoFactor  bool         `json:"2fa"`
+	CreatedAt  *time.Time   `json:"created_at"`
+	UpdatedAt  *time.Time   `json:"updated_at,omitempty"`
+	Servers    []*AppServer `json:"-"`
 }
 
 func (u *User) FullName() string {
@@ -57,16 +58,30 @@ func (a *Application) ListUsers(opts ...options.ListUsersOptions) ([]*User, erro
 
 	var model struct {
 		Data []struct {
-			Attributes *User `json:"attributes"`
+			Attributes struct {
+				*User
+				Relationships struct {
+					Servers struct {
+						Data []struct {
+							Attributes *AppServer `json:"attributes"`
+						} `json:"data"`
+					} `json:"servers"`
+				} `json:"relationships"`
+			} `json:"attributes"`
 		} `json:"data"`
 	}
 	if err = json.Unmarshal(buf, &model); err != nil {
 		return nil, err
 	}
 
-	users := make([]*User, 0, len(model.Data))
+	users := make([]*User, 0)
 	for _, u := range model.Data {
-		users = append(users, u.Attributes)
+		user := u.Attributes.User
+		user.Servers = make([]*AppServer, 0)
+		for _, s := range u.Attributes.Relationships.Servers.Data {
+			user.Servers = append(user.Servers, s.Attributes)
+		}
+		users = append(users, user)
 	}
 
 	return users, nil
@@ -89,13 +104,28 @@ func (a *Application) GetUser(id int, opts ...options.GetUserOptions) (*User, er
 	}
 
 	var model struct {
-		Attributes User `json:"attributes"`
+		Attributes struct {
+			*User
+			Relationships struct {
+				Servers struct {
+					Data []struct {
+						Attributes *AppServer `json:"attributes"`
+					} `json:"data"`
+				} `json:"servers"`
+			} `json:"relationships"`
+		} `json:"attributes"`
 	}
 	if err = json.Unmarshal(buf, &model); err != nil {
 		return nil, err
 	}
 
-	return &model.Attributes, nil
+	user := model.Attributes.User
+	user.Servers = make([]*AppServer, 0)
+	for _, s := range model.Attributes.Relationships.Servers.Data {
+		user.Servers = append(user.Servers, s.Attributes)
+	}
+
+	return user, nil
 }
 
 func (a *Application) GetUserExternal(id string, opts ...options.GetUserOptions) (*User, error) {
@@ -108,20 +138,34 @@ func (a *Application) GetUserExternal(id string, opts ...options.GetUserOptions)
 	if err != nil {
 		return nil, err
 	}
-
 	buf, err := validate(res)
 	if err != nil {
 		return nil, err
 	}
 
 	var model struct {
-		Attributes User `json:"attributes"`
+		Attributes struct {
+			*User
+			Relationships struct {
+				Servers struct {
+					Data []struct {
+						Attributes *AppServer `json:"attributes"`
+					} `json:"data"`
+				} `json:"servers"`
+			} `json:"relationships"`
+		} `json:"attributes"`
 	}
 	if err = json.Unmarshal(buf, &model); err != nil {
 		return nil, err
 	}
 
-	return &model.Attributes, nil
+	user := model.Attributes.User
+	user.Servers = make([]*AppServer, 0)
+	for _, s := range model.Attributes.Relationships.Servers.Data {
+		user.Servers = append(user.Servers, s.Attributes)
+	}
+
+	return user, nil
 }
 
 type CreateUserDescriptor struct {
