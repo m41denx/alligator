@@ -23,7 +23,7 @@ func main() {
 			"EXECUTABLE": "alligator",
 		},
 		Limits:        &gator.Limits{Memory: 1024, Disk: 1024, IO: 10, CPU: 1, Threads: "0"},
-		FeatureLimtis: gator.FeatureLimits{Allocations: 1},
+		FeatureLimits: gator.FeatureLimits{Allocations: 1},
 		Deploy:        &gator.DeployDescriptor{Locations: []int{1, 2}, PortRange: []string{}},
 	})
 	if err != nil {

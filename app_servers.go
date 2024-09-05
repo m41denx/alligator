@@ -239,7 +239,7 @@ type CreateServerDescriptor struct {
 	SkipScripts       bool                   `json:"skip_scripts,omitempty"`
 	OOMDisabled       bool                   `json:"oom_disabled"`
 	Limits            *Limits                `json:"limits"`
-	FeatureLimtis     FeatureLimits          `json:"feature_limits"`
+	FeatureLimits     FeatureLimits          `json:"feature_limits"`
 	Allocation        *AllocationDescriptor  `json:"allocation,omitempty"`
 	Deploy            *DeployDescriptor      `json:"deploy,omitempty"`
 	StartOnCompletion bool                   `json:"start_on_completion,omitempty"`
