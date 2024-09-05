@@ -59,9 +59,9 @@ package main
   - [X] Options
   - [ ] Database endpoint support
     - [ ] Extended databases details (password, host)
-  - [ ] Nests endpoint support
-    - [ ] Extended nest details (eggs, servers)
-  - [ ] Eggs endpoint support
+  - [X] Nests endpoint support
+    - [X] Extended nest details (eggs, servers)
+  - [X] Eggs endpoint support
     - [ ] Extended eggs details (nest, servers, config, script, variables)
   - [X] Extended user details (servers)
   - [X] Extended nodes details (allocations, location, servers)
@@ -71,3 +71,5 @@ package main
   - [X] Additional methods like `/{server}/reinstall` and `/{server}/force`
 - [ ] Client API
   - [ ] What is this goofy ahh infinite documentation...
+- [ ] Pagination (50 servers limit is a pain tbh)
+- [ ] Godoc
