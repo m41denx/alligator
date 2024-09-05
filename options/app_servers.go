@@ -13,10 +13,17 @@ type IncludeServers struct {
 	Databases   bool `param:"databases"`   // List of databases on the server
 }
 
-type GetServerOptions struct {
-	requestOptions
+type ListServersOptions struct {
 	Include IncludeServers
 }
+
+func (o *ListServersOptions) getOptions() *requestOptions {
+	return &requestOptions{
+		Include: o.Include,
+	}
+}
+
+type GetServerOptions ListServersOptions
 
 func (o *GetServerOptions) getOptions() *requestOptions {
 	return &requestOptions{

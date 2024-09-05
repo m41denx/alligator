@@ -23,21 +23,24 @@ type AppServer struct {
 	UserID        int           `json:"user"`
 	NodeID        int           `json:"node"`
 	Allocation    int           `json:"allocation"`
-	Nest          int           `json:"nest"`
-	Egg           int           `json:"egg"`
+	NestID        int           `json:"nest"`
+	EggID         int           `json:"egg"`
 	Container     struct {
 		StartupCommand string                 `json:"startup_command"`
 		Image          string                 `json:"image"`
 		Installed      int                    `json:"installed"`
 		Environment    map[string]interface{} `json:"environment"`
 	} `json:"container"`
-	CreatedAt   *time.Time    `json:"created_at"`
-	UpdatedAt   *time.Time    `json:"updated_at,omitempty"`
-	Allocations []*Allocation `json:"-"`
-	UserObject  *User         `json:"-"`
-	Subusers    []*User       `json:"-"`
-	Location    *Location     `json:"-"`
-	NodeObject  *Node         `json:"-"`
+	CreatedAt   *time.Time     `json:"created_at"`
+	UpdatedAt   *time.Time     `json:"updated_at,omitempty"`
+	Allocations []*Allocation  `json:"-"`
+	UserObject  *User          `json:"-"`
+	Subusers    []*User        `json:"-"`
+	Location    *Location      `json:"-"`
+	NodeObject  *Node          `json:"-"`
+	NestObject  *Nest          `json:"-"`
+	EggObject   *Egg           `json:"-"`
+	Variables   []*EggVariable `json:"-"`
 }
 
 func (s *AppServer) BuildDescriptor() *ServerBuildDescriptor {
@@ -64,14 +67,11 @@ func (s *AppServer) StartupDescriptor() *ServerStartupDescriptor {
 	return &ServerStartupDescriptor{
 		Startup:     s.Container.StartupCommand,
 		Environment: s.Container.Environment,
-		Egg:         s.Egg,
+		Egg:         s.EggID,
 		Image:       s.Container.Image,
 	}
 }
 
-// TODO: nest
-// TODO: egg
-// TODO: variables
 // TODO: databases
 type ResponseServer struct {
 	*AppServer
@@ -95,6 +95,17 @@ type ResponseServer struct {
 		Node struct {
 			Attributes *Node `json:"attributes"`
 		} `json:"node"`
+		Nest struct {
+			Attributes *Nest `json:"attributes"`
+		} `json:"nest"`
+		Egg struct {
+			Attributes *Egg `json:"attributes"`
+		} `json:"egg"`
+		Variables struct {
+			Data []struct {
+				Attributes *EggVariable `json:"attributes"`
+			} `json:"data"`
+		} `json:"variables"`
 	} `json:"relationships"`
 }
 
@@ -111,11 +122,21 @@ func (r *ResponseServer) getServer() *AppServer {
 	}
 	server.Location = r.Relationships.Location.Attributes
 	server.NodeObject = r.Relationships.Node.Attributes
+	server.NestObject = r.Relationships.Nest.Attributes
+	server.EggObject = r.Relationships.Egg.Attributes
+	server.Variables = make([]*EggVariable, 0)
+	for _, v := range r.Relationships.Variables.Data {
+		server.Variables = append(server.Variables, v.Attributes)
+	}
 	return server
 }
 
-func (a *Application) ListServers() ([]*AppServer, error) {
-	req := a.newRequest("GET", "/servers", nil)
+func (a *Application) ListServers(opts ...options.ListServersOptions) ([]*AppServer, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/servers?%s", o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err

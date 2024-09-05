@@ -67,7 +67,8 @@ package main
   - [X] Extended nodes details (allocations, location, servers)
   - [X] Extended allocations details (node, server)
   - [X] Extended location details (nodes, servers)
-  - [ ] Extended servers details (allocations+, user+, subusers+, nest, egg, variables, location+, node+, databases)
+  - [X] Extended servers details (allocations+, user+, subusers+, nest+, egg+, variables+, location+, node+)
+  - [ ] Extended servers details (databases)
   - [X] Additional methods like `/{server}/reinstall` and `/{server}/force`
 - [ ] Client API
   - [ ] What is this goofy ahh infinite documentation...
