@@ -2,17 +2,18 @@ package main
 
 import (
 	"fmt"
+	"github.com/m41denx/alligator/options"
 	"os"
 	"strings"
 
-	croc "github.com/parkervcp/crocgodyl"
+	gator "github.com/m41denx/alligator"
 )
 
 func main() {
 	url := os.Getenv("CROC_URL")
-	app, _ := croc.NewApp(url, os.Getenv("CROC_KEY"))
+	app, _ := gator.NewApp(url, os.Getenv("CROC_KEY"))
 
-	node, err := app.CreateNode(croc.CreateNodeDescriptor{
+	node, err := app.CreateNode(gator.CreateNodeDescriptor{
 		Name:               "croc-node-1",
 		LocationID:         1,
 		Public:             true,
@@ -29,7 +30,7 @@ func main() {
 		UploadSize:         100,
 	})
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
@@ -39,15 +40,19 @@ func main() {
 	data.Public = false
 	node, err = app.UpdateNode(node.ID, *data)
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
 	fmt.Printf("ID: %d - Name: %s - Public: %v\n", node.ID, node.Name, node.Public)
 
-	nodes, err := app.GetNodes()
+	nodes, err := app.ListNodes(options.ListNodesOptions{
+		Include: options.IncludeNodes{
+			Location: true,
+			Servers:  true,
+		}})
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
@@ -57,15 +62,5 @@ func main() {
 
 	if err = app.DeleteNode(node.ID); err != nil {
 		handleError(err)
-	}
-}
-
-func handleError(err error) {
-	if errs, ok := err.(*croc.ApiError); ok {
-		for _, e := range errs.Errors {
-			fmt.Println(e.Error())
-		}
-	} else {
-		fmt.Println(err.Error())
 	}
 }

@@ -1,10 +1,11 @@
-package crocgodyl
+package alligator
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/m41denx/alligator/options"
 	"time"
 )
 
@@ -50,8 +51,12 @@ func (n *Node) UpdateDescriptor() *UpdateNodeDescriptor {
 	}
 }
 
-func (a *Application) GetNodes() ([]*Node, error) {
-	req := a.newRequest("GET", "/nodes", nil)
+func (a *Application) ListNodes(opts ...options.ListNodesOptions) ([]*Node, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/nodes?%s", o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err
@@ -79,8 +84,12 @@ func (a *Application) GetNodes() ([]*Node, error) {
 	return nodes, nil
 }
 
-func (a *Application) GetNode(id int) (*Node, error) {
-	req := a.newRequest("GET", fmt.Sprintf("/nodes/%d", id), nil)
+func (a *Application) GetNode(id int, opts ...options.GetNodeOptions) (*Node, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/nodes/%d?%s", id, o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err
@@ -298,8 +307,12 @@ type Allocation struct {
 	Assigned bool   `json:"assigned"`
 }
 
-func (a *Application) GetNodeAllocations(node int) ([]*Allocation, error) {
-	req := a.newRequest("GET", fmt.Sprintf("/nodes/%d/allocations", node), nil)
+func (a *Application) ListNodeAllocations(node int, opts ...options.ListNodeAllocationsOptions) ([]*Allocation, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/nodes/%d/allocations?%s", node, o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err

@@ -2,49 +2,50 @@ package main
 
 import (
 	"fmt"
+	"github.com/m41denx/alligator/options"
 	"os"
 
-	croc "github.com/parkervcp/crocgodyl"
+	gator "github.com/m41denx/alligator"
 )
 
 func main() {
-	app, _ := croc.NewApp(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
+	app, _ := gator.NewApp(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
 
-	server, err := app.CreateServer(croc.CreateServerDescriptor{
-		Name:        "crocgodyl server",
+	server, err := app.CreateServer(gator.CreateServerDescriptor{
+		Name:        "alligator server",
 		Description: "test server",
 		User:        5,
 		Egg:         25,
 		DockerImage: "quay.io/parkervcp/pterodactyl-images:base_debian",
 		Startup:     "./${EXECUTABLE}",
 		Environment: map[string]interface{}{
-			"GO_PACKAGE": "github.com/parkervcp/crocgodyl",
-			"EXECUTABLE": "crocgodyl",
+			"GO_PACKAGE": "github.com/m41denx/alligator",
+			"EXECUTABLE": "alligator",
 		},
-		Limits:        &croc.Limits{1024, 0, 1024, 10, 1, "0", false},
-		FeatureLimtis: croc.FeatureLimits{1, 0, 0},
-		Deploy:        &croc.DeployDescriptor{[]int{1, 2}, false, []string{}},
+		Limits:        &gator.Limits{Memory: 1024, Disk: 1024, IO: 10, CPU: 1, Threads: "0"},
+		FeatureLimtis: gator.FeatureLimits{Allocations: 1},
+		Deploy:        &gator.DeployDescriptor{Locations: []int{1, 2}, PortRange: []string{}},
 	})
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
 	fmt.Printf("ID: %d - Name: %s - ExternalID: %s\n", server.ID, server.Name, server.ExternalID)
 
 	data := server.DetailsDescriptor()
-	data.ExternalID = "croc"
+	data.ExternalID = "gator"
 	server, err = app.UpdateServerDetails(server.ID, *data)
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
 	fmt.Printf("ID: %d - Name: %s - ExternalID: %s\n", server.ID, server.Name, server.ExternalID)
 
-	servers, err := app.GetServers()
+	servers, err := app.ListServers()
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
@@ -53,16 +54,22 @@ func main() {
 	}
 
 	if err = app.DeleteServer(server.ID, false); err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
+		return
 	}
-}
 
-func handleError(err error) {
-	if errs, ok := err.(*croc.ApiError); ok {
-		for _, e := range errs.Errors {
-			fmt.Println(e.Error())
-		}
-	} else {
-		fmt.Println(err.Error())
+	server2, err := app.GetServer(server.ID, options.GetServerOptions{
+		Include: options.IncludeServers{
+			User:     true,
+			Subusers: true,
+			Node:     true,
+		},
+	})
+
+	if err != nil {
+		fmt.Printf("%#v", err)
+		return
 	}
+
+	fmt.Printf("ID: %d - Name: %s - ExternalID: %s\n", server2.ID, server2.Name, server2.ExternalID)
 }

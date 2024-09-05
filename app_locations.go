@@ -1,9 +1,10 @@
-package crocgodyl
+package alligator
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/m41denx/alligator/options"
 	"time"
 )
 
@@ -15,8 +16,12 @@ type Location struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
-func (a *Application) GetLocations() ([]*Location, error) {
-	req := a.newRequest("GET", "/locations", nil)
+func (a *Application) ListLocations(opts ...options.ListLocationsOptions) ([]*Location, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/locations?%s", o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err
@@ -44,8 +49,12 @@ func (a *Application) GetLocations() ([]*Location, error) {
 	return locs, nil
 }
 
-func (a *Application) GetLocation(id int) (*Location, error) {
-	req := a.newRequest("GET", fmt.Sprintf("/locations/%d", id), nil)
+func (a *Application) GetLocation(id int, opts ...options.GetLocationOptions) (*Location, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/locations/%d?%s", id, o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err

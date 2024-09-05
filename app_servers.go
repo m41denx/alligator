@@ -1,10 +1,11 @@
-package crocgodyl
+package alligator
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/m41denx/alligator/options"
 	"time"
 )
 
@@ -63,7 +64,7 @@ func (s *AppServer) StartupDescriptor() *ServerStartupDescriptor {
 	}
 }
 
-func (a *Application) GetServers() ([]*AppServer, error) {
+func (a *Application) ListServers() ([]*AppServer, error) {
 	req := a.newRequest("GET", "/servers", nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
@@ -92,8 +93,12 @@ func (a *Application) GetServers() ([]*AppServer, error) {
 	return servers, nil
 }
 
-func (a *Application) GetServer(id int) (*AppServer, error) {
-	req := a.newRequest("GET", fmt.Sprintf("/servers/%d", id), nil)
+func (a *Application) GetServer(id int, opts ...options.GetServerOptions) (*AppServer, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/servers/%d?%s", id, o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err
@@ -114,8 +119,12 @@ func (a *Application) GetServer(id int) (*AppServer, error) {
 	return &model.Attributes, nil
 }
 
-func (a *Application) GetServerExternal(id string) (*AppServer, error) {
-	req := a.newRequest("GET", fmt.Sprintf("/servers/external/%s", id), nil)
+func (a *Application) GetServerExternal(id string, opts ...options.GetServerOptions) (*AppServer, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/servers/external/%s?%s", id, o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err

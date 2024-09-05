@@ -1,4 +1,4 @@
-package crocgodyl
+package alligator
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-const Version = "1.0.0"
+const Version = "1.1.0"
 
 type Application struct {
 	PanelURL string
@@ -42,7 +42,7 @@ func NewApp(url, key string) (*Application, error) {
 func (a *Application) newRequest(method, path string, body io.Reader) *http.Request {
 	req, _ := http.NewRequest(method, fmt.Sprintf("%s/api/application%s", a.PanelURL, path), body)
 
-	req.Header.Set("User-Agent", "Crocgodyl v"+Version)
+	req.Header.Set("User-Agent", "Alligator v"+Version)
 	req.Header.Set("Authorization", "Bearer "+a.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
@@ -67,11 +67,11 @@ func NewClient(url, key string) (*Client, error) {
 	return client, nil
 }
 
-func (a *Client) newRequest(method, path string, body io.Reader) *http.Request {
-	req, _ := http.NewRequest(method, fmt.Sprintf("%s/api/client%s", a.PanelURL, path), body)
+func (c *Client) newRequest(method, path string, body io.Reader) *http.Request {
+	req, _ := http.NewRequest(method, fmt.Sprintf("%s/api/client%s", c.PanelURL, path), body)
 
-	req.Header.Set("User-Agent", "Crocgodyl v"+Version)
-	req.Header.Set("Authorization", "Bearer "+a.ApiKey)
+	req.Header.Set("User-Agent", "Alligator v"+Version)
+	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 

@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"os"
 
-	croc "github.com/parkervcp/crocgodyl"
+	gator "github.com/m41denx/alligator"
 )
 
 func main() {
-	client, _ := croc.NewClient(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
+	client, _ := gator.NewClient(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
 
 	account, err := client.GetAccount()
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
@@ -20,21 +20,11 @@ func main() {
 
 	apikeys, err := client.GetApiKeys()
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
 	for _, k := range apikeys {
 		fmt.Printf("%s: %s\n", k.Identifier, k.Description)
-	}
-}
-
-func handleError(err error) {
-	if errs, ok := err.(*croc.ApiError); ok {
-		for _, e := range errs.Errors {
-			fmt.Println(e.Error())
-		}
-	} else {
-		fmt.Println(err.Error())
 	}
 }

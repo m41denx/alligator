@@ -2,22 +2,23 @@ package main
 
 import (
 	"fmt"
+	"github.com/m41denx/alligator/options"
 	"os"
 
-	croc "github.com/parkervcp/crocgodyl"
+	gator "github.com/m41denx/alligator"
 )
 
 func main() {
-	app, _ := croc.NewApp(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
+	app, _ := gator.NewApp(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
 
-	user, err := app.CreateUser(croc.CreateUserDescriptor{
+	user, err := app.CreateUser(gator.CreateUserDescriptor{
 		Email:     "example@example.com",
 		Username:  "example",
 		FirstName: "test",
 		LastName:  "user",
 	})
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
@@ -27,15 +28,23 @@ func main() {
 	data.RootAdmin = true
 	user, err = app.UpdateUser(user.ID, *data)
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
 	fmt.Printf("ID: %d - Name: %s - RootAdmin: %v\n", user.ID, user.Username, user.RootAdmin)
 
-	users, err := app.GetUsers()
+	users, err := app.ListUsers(options.ListUsersOptions{
+		Include: options.IncludeUsers{
+			Servers: true,
+		},
+		Filters: options.FiltersUsers{
+			Username: "example",
+		},
+		SortBy: options.ListUsersSort_UUID_DESC,
+	})
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
@@ -44,16 +53,6 @@ func main() {
 	}
 
 	if err = app.DeleteUser(user.ID); err != nil {
-		handleError(err)
-	}
-}
-
-func handleError(err error) {
-	if errs, ok := err.(*croc.ApiError); ok {
-		for _, e := range errs.Errors {
-			fmt.Println(e.Error())
-		}
-	} else {
-		fmt.Println(err.Error())
+		fmt.Printf("%#v", err)
 	}
 }

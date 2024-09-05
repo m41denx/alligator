@@ -1,3 +1,3 @@
-module github.com/parkervcp/crocgodyl
+module github.com/m41denx/alligator
 
-go 1.17
+go 1.22

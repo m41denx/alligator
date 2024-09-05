@@ -1,4 +1,4 @@
-package crocgodyl
+package alligator
 
 import "fmt"
 

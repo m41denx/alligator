@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/m41denx/alligator/options"
 	"os"
 
-	croc "github.com/parkervcp/crocgodyl"
+	gator "github.com/m41denx/alligator"
 )
 
 func main() {
-	app, _ := croc.NewApp(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
+	app, _ := gator.NewApp(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
 
 	loc, err := app.CreateLocation("us", "United States")
 	if err != nil {
@@ -18,7 +19,7 @@ func main() {
 
 	fmt.Printf("ID: %d - Short: %s - Long: %s\n", loc.ID, loc.Short, loc.Long)
 
-	loc, err = app.UpdateLocation(loc.ID, "us", "United States America")
+	loc, err = app.UpdateLocation(loc.ID, "us", "United States of America")
 	if err != nil {
 		handleError(err)
 		return
@@ -26,9 +27,13 @@ func main() {
 
 	fmt.Printf("ID: %d - Short: %s - Long: %s\n", loc.ID, loc.Short, loc.Long)
 
-	locations, err := app.GetLocations()
+	// List locations and nodes in them
+	locations, err := app.ListLocations(options.ListLocationsOptions{
+		Include: options.IncludeLocations{
+			Nodes: true,
+		}})
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
@@ -38,15 +43,5 @@ func main() {
 
 	if err = app.DeleteLocation(loc.ID); err != nil {
 		handleError(err)
-	}
-}
-
-func handleError(err error) {
-	if errs, ok := err.(*croc.ApiError); ok {
-		for _, e := range errs.Errors {
-			fmt.Println(e.Error())
-		}
-	} else {
-		fmt.Println(err.Error())
 	}
 }

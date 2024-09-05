@@ -1,9 +1,10 @@
-package crocgodyl
+package alligator
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/m41denx/alligator/options"
 	"time"
 )
 
@@ -38,8 +39,12 @@ func (u *User) UpdateDescriptor() *UpdateUserDescriptor {
 	}
 }
 
-func (a *Application) GetUsers() ([]*User, error) {
-	req := a.newRequest("GET", "/users", nil)
+func (a *Application) ListUsers(opts ...options.ListUsersOptions) ([]*User, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/users?%s", o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err
@@ -67,8 +72,12 @@ func (a *Application) GetUsers() ([]*User, error) {
 	return users, nil
 }
 
-func (a *Application) GetUser(id int) (*User, error) {
-	req := a.newRequest("GET", fmt.Sprintf("/users/%d", id), nil)
+func (a *Application) GetUser(id int, opts ...options.GetUserOptions) (*User, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/users/%d?%s", id, o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err
@@ -89,8 +98,12 @@ func (a *Application) GetUser(id int) (*User, error) {
 	return &model.Attributes, nil
 }
 
-func (a *Application) GetUserExternal(id string) (*User, error) {
-	req := a.newRequest("GET", fmt.Sprintf("/users/external/%s", id), nil)
+func (a *Application) GetUserExternal(id string, opts ...options.GetUserOptions) (*User, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/users/external/%s?%s", id, o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err

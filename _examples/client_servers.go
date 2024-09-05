@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"os"
 
-	croc "github.com/parkervcp/crocgodyl"
+	gator "github.com/m41denx/alligator"
 )
 
 func main() {
-	client, _ := croc.NewClient(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
+	client, _ := gator.NewClient(os.Getenv("CROC_URL"), os.Getenv("CROC_KEY"))
 
 	servers, err := client.GetServers()
 	if err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
@@ -27,22 +27,12 @@ func main() {
 	server := servers[0]
 
 	if err = client.SetServerPowerState(server.Identifier, "restart"); err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
 	}
 
 	if err = client.SendServerCommand(server.Identifier, "say \"hello world\""); err != nil {
-		handleError(err)
+		fmt.Printf("%#v", err)
 		return
-	}
-}
-
-func handleError(err error) {
-	if errs, ok := err.(*croc.ApiError); ok {
-		for _, e := range errs.Errors {
-			fmt.Println(e.Error())
-		}
-	} else {
-		fmt.Println(err.Error())
 	}
 }
