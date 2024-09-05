@@ -23,3 +23,28 @@ func (o *GetNestOptions) getOptions() *requestOptions {
 		Include: o.Include,
 	}
 }
+
+type IncludeEggs struct {
+	Nest      bool `param:"nest"`      // Information about the nest that owns the egg
+	Servers   bool `param:"servers"`   // List of servers using the egg
+	Variables bool `param:"variables"` // List of egg variables
+}
+
+type ListEggsOptions struct {
+	requestOptions
+	Include IncludeEggs
+}
+
+func (o *ListEggsOptions) getOptions() *requestOptions {
+	return &requestOptions{
+		Include: o.Include,
+	}
+}
+
+type GetEggOptions ListEggsOptions
+
+func (o *GetEggOptions) getOptions() *requestOptions {
+	return &requestOptions{
+		Include: o.Include,
+	}
+}

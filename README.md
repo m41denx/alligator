@@ -62,7 +62,7 @@ package main
   - [X] Nests endpoint support
     - [X] Extended nest details (eggs, servers)
   - [X] Eggs endpoint support
-    - [ ] Extended eggs details (nest, servers, config, script, variables)
+    - [X] Extended eggs details (nest, servers, variables)
   - [X] Extended user details (servers)
   - [X] Extended nodes details (allocations, location, servers)
   - [X] Extended allocations details (node, server)

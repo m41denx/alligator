@@ -21,19 +21,21 @@ type Nest struct {
 }
 
 type Egg struct {
-	ID            int          `json:"id,omitempty"`
-	UUID          string       `json:"uuid,omitempty"`
-	Name          string       `json:"name,omitempty"`
-	Nest          int          `json:"nest,omitempty"`
-	Author        string       `json:"author,omitempty"`
-	Description   string       `json:"description,omitempty"`
-	DockerImage   string       `json:"docker_image,omitempty"`
-	Config        EggConfig    `json:"config,omitempty"`
-	Startup       string       `json:"startup,omitempty"`
-	Script        EggScript    `json:"script,omitempty"`
-	CreatedAt     time.Time    `json:"created_at,omitempty"`
-	UpdatedAt     time.Time    `json:"updated_at,omitempty"`
-	Relationships EggRelations `json:"relationships,omitempty"`
+	ID          int            `json:"id,omitempty"`
+	UUID        string         `json:"uuid,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	NestID      int            `json:"nest,omitempty"`
+	Author      string         `json:"author,omitempty"`
+	Description string         `json:"description,omitempty"`
+	DockerImage string         `json:"docker_image,omitempty"`
+	Config      EggConfig      `json:"config,omitempty"`
+	Startup     string         `json:"startup,omitempty"`
+	Script      EggScript      `json:"script,omitempty"`
+	CreatedAt   time.Time      `json:"created_at,omitempty"`
+	UpdatedAt   time.Time      `json:"updated_at,omitempty"`
+	NestObject  *Nest          `json:"-"`
+	Servers     []*AppServer   `json:"-"`
+	Variables   []*EggVariable `json:"-"`
 }
 
 type EggConfig struct {
@@ -83,50 +85,18 @@ type EggScript struct {
 	Extends    interface{} `json:"extends,omitempty"`
 }
 
-type EggRelations struct {
-	Variables EggVariables `json:"variables,omitempty"`
-}
-
-type EggVariables struct {
-	Object string            `json:"object,omitempty"`
-	Data   []EggRelationData `json:"data,omitempty"`
-}
-
-type EggRelationData struct {
-	Object     string `json:"object,omitempty"`
-	Attributes struct {
-		ID           int    `json:"id,omitempty"`
-		EggID        int    `json:"egg_id,omitempty"`
-		Name         string `json:"name,omitempty"`
-		Description  string `json:"description,omitempty"`
-		EnvVariable  string `json:"env_variable,omitempty"`
-		DefaultValue string `json:"default_value,omitempty"`
-		UserViewable int    `json:"user_viewable,omitempty"`
-		UserEditable int    `json:"user_editable,omitempty"`
-		Rules        string `json:"rules,omitempty"`
-		CreatedAt    string `json:"created_at,omitempty"`
-		UpdatedAt    string `json:"updated_at,omitempty"`
-	} `json:"attributes,omitempty"`
-}
-
-func (e *EggVariables) UnmarshalJSON(b []byte) error {
-	var eggVariables struct {
-		Object string            `json:"object,omitempty"`
-		Data   []EggRelationData `json:"data,omitempty"`
-	}
-
-	if err := json.Unmarshal(b, &eggVariables); err != nil {
-		if eggVariables.Object == "list" {
-			e.Data = []EggRelationData{}
-		} else {
-			return err
-		}
-	}
-
-	e.Object = eggVariables.Object
-	e.Data = eggVariables.Data
-
-	return nil
+type EggVariable struct {
+	ID           int    `json:"id,omitempty"`
+	EggID        int    `json:"egg_id,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Description  string `json:"description,omitempty"`
+	EnvVariable  string `json:"env_variable,omitempty"`
+	DefaultValue string `json:"default_value,omitempty"`
+	UserViewable int    `json:"user_viewable,omitempty"`
+	UserEditable int    `json:"user_editable,omitempty"`
+	Rules        string `json:"rules,omitempty"`
+	CreatedAt    string `json:"created_at,omitempty"`
+	UpdatedAt    string `json:"updated_at,omitempty"`
 }
 
 type ResponseNest struct {
@@ -221,8 +191,45 @@ func (a *Application) GetNest(nestID int, opts ...options.GetNestOptions) (*Nest
 	return model.Attributes.getNest(), nil
 }
 
-func (a *Application) GetNestEggs(nestID int) ([]*Egg, error) {
-	req := a.newRequest("GET", fmt.Sprintf("nests/%d/eggs", nestID), nil)
+type ResponseEgg struct {
+	*Egg
+	Relationships struct {
+		Nest struct {
+			Attributes *Nest `json:"attributes"`
+		} `json:"nest"`
+		Servers struct {
+			Data []struct {
+				Attributes *AppServer `json:"attributes"`
+			} `json:"data"`
+		} `json:"servers"`
+		Variables struct {
+			Data []struct {
+				Attributes *EggVariable `json:"attributes"`
+			} `json:"data"`
+		} `json:"variables"`
+	} `json:"relationships"`
+}
+
+func (r *ResponseEgg) getEgg() *Egg {
+	egg := r.Egg
+	egg.NestObject = r.Relationships.Nest.Attributes
+	egg.Servers = make([]*AppServer, 0)
+	for _, s := range r.Relationships.Servers.Data {
+		egg.Servers = append(egg.Servers, s.Attributes)
+	}
+	egg.Variables = make([]*EggVariable, 0)
+	for _, v := range r.Relationships.Variables.Data {
+		egg.Variables = append(egg.Variables, v.Attributes)
+	}
+	return egg
+}
+
+func (a *Application) ListNestEggs(nestID int, opts ...options.ListEggsOptions) ([]*Egg, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("nests/%d/eggs?%s", nestID, o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err
@@ -235,7 +242,7 @@ func (a *Application) GetNestEggs(nestID int) ([]*Egg, error) {
 
 	var model struct {
 		Data []struct {
-			Attributes *Egg `json:"attributes"`
+			Attributes *ResponseEgg `json:"attributes"`
 		} `json:"data"`
 	}
 
@@ -246,14 +253,18 @@ func (a *Application) GetNestEggs(nestID int) ([]*Egg, error) {
 
 	eggs := make([]*Egg, len(model.Data))
 	for _, egg := range model.Data {
-		eggs = append(eggs, egg.Attributes)
+		eggs = append(eggs, egg.Attributes.getEgg())
 	}
 
 	return eggs, nil
 }
 
-func (a *Application) GetEgg(nestID, eggID int) (*Egg, error) {
-	req := a.newRequest("GET", fmt.Sprintf("nests/%d/eggs", nestID), nil)
+func (a *Application) GetEgg(nestID, eggID int, opts ...options.GetEggOptions) (*Egg, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("nests/%d/eggs?%s", nestID, o), nil)
 	res, err := a.Http.Do(req)
 	if err != nil {
 		return nil, err
@@ -265,7 +276,7 @@ func (a *Application) GetEgg(nestID, eggID int) (*Egg, error) {
 	}
 
 	var model struct {
-		Attributes *Egg `json:"attributes"`
+		Attributes *ResponseEgg `json:"attributes"`
 	}
 
 	err = json.Unmarshal(buf, &model)
@@ -273,5 +284,5 @@ func (a *Application) GetEgg(nestID, eggID int) (*Egg, error) {
 		return nil, err
 	}
 
-	return model.Attributes, nil
+	return model.Attributes.getEgg(), nil
 }
