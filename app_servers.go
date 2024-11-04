@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/m41denx/alligator/options"
 	"time"
+
+	"github.com/m41denx/alligator/options"
 )
 
 type AppServer struct {
@@ -72,7 +73,178 @@ func (s *AppServer) StartupDescriptor() *ServerStartupDescriptor {
 	}
 }
 
-// TODO: databases
+// Database represents a database instance for a server
+type Database struct {
+	ID        int        `json:"id"`
+	ServerID  int        `json:"server"`
+	HostID    int        `json:"host"`
+	Database  string     `json:"database"`
+	Username  string     `json:"username"`
+	Remote    string     `json:"remote"`
+	MaxSize   int        `json:"max_size"`
+	Port      int        `json:"port,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at"`
+	Host      *Host      `json:"-"`
+	Password  string     `json:"password,omitempty"`
+}
+
+// Host represents a database host
+type Host struct {
+	ID        int        `json:"id"`
+	Name      string     `json:"name"`
+	Host      string     `json:"host"`
+	Port      int        `json:"port"`
+	Username  string     `json:"username"`
+	Node      int        `json:"node"`
+	CreatedAt *time.Time `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+// ResponseDatabase represents the API response structure for database queries
+type ResponseDatabase struct {
+	*Database
+	Relationships struct {
+		Host struct {
+			Attributes *Host `json:"attributes"`
+		} `json:"host"`
+	} `json:"relationships"`
+}
+
+func (r *ResponseDatabase) getDatabase() *Database {
+	db := r.Database
+	db.Host = r.Relationships.Host.Attributes
+	return db
+}
+
+func (a *Application) ListDatabases(serverID int, opts ...options.ListDatabasesOptions) ([]*Database, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(opts[0].GetOptions()) // было getOptions
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/servers/%d/databases?%s", serverID, o), nil)
+	res, err := a.Http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := validate(res)
+	if err != nil {
+		return nil, err
+	}
+
+	var model struct {
+		Data []struct {
+			Attributes *ResponseDatabase `json:"attributes"`
+		} `json:"data"`
+	}
+	if err = json.Unmarshal(buf, &model); err != nil {
+		return nil, err
+	}
+
+	databases := make([]*Database, 0, len(model.Data))
+	for _, d := range model.Data {
+		databases = append(databases, d.Attributes.getDatabase())
+	}
+
+	return databases, nil
+}
+
+func (a *Application) GetDatabase(serverID, databaseID int, opts ...options.GetDatabaseOptions) (*Database, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(opts[0].GetOptions()) // было getOptions
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/servers/%d/databases/%d?%s", serverID, databaseID, o), nil)
+	res, err := a.Http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := validate(res)
+	if err != nil {
+		return nil, err
+	}
+
+	var model struct {
+		Attributes ResponseDatabase `json:"attributes"`
+	}
+	if err = json.Unmarshal(buf, &model); err != nil {
+		return nil, err
+	}
+
+	return model.Attributes.getDatabase(), nil
+}
+
+// CreateDatabaseOptions represents the options for creating a new database
+type CreateDatabaseOptions struct {
+	Database string `json:"database"`
+	Remote   string `json:"remote"`
+	HostID   int    `json:"host,omitempty"`
+}
+
+// CreateDatabase creates a new database for a server
+func (a *Application) CreateDatabase(serverID int, opts CreateDatabaseOptions) (*Database, error) {
+	data, _ := json.Marshal(opts)
+	body := bytes.Buffer{}
+	body.Write(data)
+
+	req := a.newRequest("POST", fmt.Sprintf("/servers/%d/databases", serverID), &body)
+	res, err := a.Http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := validate(res)
+	if err != nil {
+		return nil, err
+	}
+
+	var model struct {
+		Attributes Database `json:"attributes"`
+	}
+	if err = json.Unmarshal(buf, &model); err != nil {
+		return nil, err
+	}
+
+	return &model.Attributes, nil
+}
+
+// ResetDatabasePassword resets the password for a specific database
+func (a *Application) ResetDatabasePassword(serverID, databaseID int) (*Database, error) {
+	req := a.newRequest("POST", fmt.Sprintf("/servers/%d/databases/%d/reset-password", serverID, databaseID), nil)
+	res, err := a.Http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := validate(res)
+	if err != nil {
+		return nil, err
+	}
+
+	var model struct {
+		Attributes Database `json:"attributes"`
+	}
+	if err = json.Unmarshal(buf, &model); err != nil {
+		return nil, err
+	}
+
+	return &model.Attributes, nil
+}
+
+// DeleteDatabase deletes a specific database
+func (a *Application) DeleteDatabase(serverID, databaseID int) error {
+	req := a.newRequest("DELETE", fmt.Sprintf("/servers/%d/databases/%d", serverID, databaseID), nil)
+	res, err := a.Http.Do(req)
+	if err != nil {
+		return err
+	}
+
+	_, err = validate(res)
+	return err
+}
+
 type ResponseServer struct {
 	*AppServer
 	Relationships struct {

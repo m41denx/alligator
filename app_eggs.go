@@ -3,9 +3,10 @@ package alligator
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/m41denx/alligator/options"
 	"strings"
 	"time"
+
+	"github.com/m41denx/alligator/options"
 )
 
 type Nest struct {

@@ -14,6 +14,11 @@ type requestOptions struct {
 	SortBy     string
 }
 
+// getOptions implements options.
+func (r *requestOptions) getOptions() *requestOptions {
+	panic("unimplemented")
+}
+
 type options interface {
 	getOptions() *requestOptions
 }

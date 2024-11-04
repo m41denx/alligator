@@ -13,6 +13,33 @@ type IncludeServers struct {
 	Databases   bool `param:"databases"`   // List of databases on the server
 }
 
+type ListDatabasesOptions struct {
+	Include IncludeDatabases // Included Databases
+	Fields  string           // Fields in Database
+	Filter  string           // Filtering
+	Sort    string           // Sorting
+	PerPage int              // PerPage (goofy ahh limit)
+	Page    int              // Page
+}
+
+type IncludeDatabases struct {
+	Host bool `param:"host"`
+}
+
+func (o *ListDatabasesOptions) GetOptions() *requestOptions {
+	return &requestOptions{
+		Include: o.Include,
+	}
+}
+
+type GetDatabaseOptions ListDatabasesOptions
+
+func (o *GetDatabaseOptions) GetOptions() *requestOptions {
+	return &requestOptions{
+		Include: o.Include,
+	}
+}
+
 type ListServersOptions struct {
 	Include IncludeServers
 }
