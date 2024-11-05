@@ -73,4 +73,5 @@ package main
 - [ ] Client API
   - [ ] What is this goofy ahh infinite documentation...
 - [ ] Pagination (50 servers limit is a pain tbh)
-- [ ] Godoc
+- [X] Godoc (App)
+- [ ] Godoc (Client)

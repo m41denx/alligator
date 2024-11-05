@@ -45,6 +45,10 @@ type AppServer struct {
 	Databases   []*Database    `json:"-"` // Добавляем поле для баз данных
 }
 
+// BuildDescriptor creates a ServerBuildDescriptor for the AppServer.
+// It extracts relevant server build details, such as allocation, OOM disabled,
+// limits, and feature limits from the server object.
+// This descriptor is used to initialize or modify server build parameters.
 func (s *AppServer) BuildDescriptor() *ServerBuildDescriptor {
 	return &ServerBuildDescriptor{
 		Allocation:        s.Allocation,
@@ -56,15 +60,22 @@ func (s *AppServer) BuildDescriptor() *ServerBuildDescriptor {
 	}
 }
 
+// DetailsDescriptor creates a ServerDetailsDescriptor for the AppServer.
+// It extracts relevant server details, such as the external ID, name, user ID,
+// and description from the server object.
+// This descriptor is used to initialize or modify server details.
 func (s *AppServer) DetailsDescriptor() *ServerDetailsDescriptor {
 	return &ServerDetailsDescriptor{
 		ExternalID:  s.ExternalID,
-		Name:        s.Name,
 		User:        s.UserID,
 		Description: s.Description,
 	}
 }
 
+// StartupDescriptor creates a ServerStartupDescriptor for the AppServer.
+// It extracts startup-related information, including the startup command,
+// environment variables, egg ID, and image from the server's container configuration.
+// This descriptor is used to initialize or modify server startup parameters.
 func (s *AppServer) StartupDescriptor() *ServerStartupDescriptor {
 	return &ServerStartupDescriptor{
 		Startup:     s.Container.StartupCommand,
@@ -112,12 +123,28 @@ type ResponseDatabase struct {
 	} `json:"relationships"`
 }
 
+// getDatabase returns a Database object extracted from the ResponseDatabase, which
+// is a API response structure for database queries. It creates a new Database
+// object and copies the fields from the ResponseDatabase, and also sets the Host
+// field.
 func (r *ResponseDatabase) getDatabase() *Database {
 	db := r.Database
 	db.Host = r.Relationships.Host.Attributes
 	return db
 }
 
+// ListDatabases retrieves a list of Database objects associated with a specified server ID
+// from the Pterodactyl API. The function supports customization of the API request through
+// optional ListDatabasesOptions, allowing the inclusion of related fields and filtering.
+//
+// Parameters:
+//   - serverID: The ID of the server for which databases are to be listed.
+//   - opts: Variadic ListDatabasesOptions for customizing the request.
+//
+// Returns:
+//   - A slice of pointers to Database objects representing the databases associated
+//     with the specified server.
+//   - An error if the request fails or the response cannot be parsed.
 func (a *Application) ListDatabases(serverID int, opts ...options.ListDatabasesOptions) ([]*Database, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -151,6 +178,19 @@ func (a *Application) ListDatabases(serverID int, opts ...options.ListDatabasesO
 	return databases, nil
 }
 
+// GetDatabase retrieves a Database object by its server and database IDs,
+// with the option to include related fields and customize the API request.
+// The opts argument is a variable length argument of options.GetDatabaseOptions
+// structs, which allows for the inclusion of additional fields and filtering.
+//
+// Parameters:
+//   - serverID: The ID of the server associated with the database.
+//   - databaseID: The ID of the database to retrieve.
+//   - opts: Variadic GetDatabaseOptions for customizing the request.
+//
+// Returns:
+//   - A pointer to the Database object representing the requested database.
+//   - An error if the request fails or the response cannot be parsed.
 func (a *Application) GetDatabase(serverID, databaseID int, opts ...options.GetDatabaseOptions) (*Database, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -287,6 +327,9 @@ type ResponseServer struct {
 	} `json:"relationships"`
 }
 
+// getServer resolves and returns the Server object from the ResponseServer structure.
+// It sets up the relationships for Allocations, User, Subusers, Location, Node, Nest, Egg, Variables, and Databases by extracting
+// the respective attributes from the API response. This function ensures that the Server object is fully populated with its related entities.
 func (r *ResponseServer) getServer() *AppServer {
 	server := r.AppServer
 	server.Allocations = make([]*Allocation, 0)
@@ -313,6 +356,16 @@ func (r *ResponseServer) getServer() *AppServer {
 	return server
 }
 
+// ListServers retrieves a list of Server objects from the Pterodactyl API, with
+// the option to include related allocations, user, subusers, location, node, nest, egg, variables, and databases.
+//
+// The opts argument is a variable length argument of options.ListServersOptions
+// structs. These options are used to customize the API request and response.
+//
+// The function returns a slice of Server objects, with their related allocations,
+// user, subusers, location, node, nest, egg, variables, and databases resolved.
+// The error return value is used to indicate any errors that occurred while
+// executing the request.
 func (a *Application) ListServers(opts ...options.ListServersOptions) ([]*AppServer, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -346,6 +399,11 @@ func (a *Application) ListServers(opts ...options.ListServersOptions) ([]*AppSer
 	return servers, nil
 }
 
+// GetServer retrieves a Server object by its ID, with its related allocations,
+// user, subusers, location, node, nest, egg, variables, and databases resolved.
+// The function takes a variable number of options, which are used to customize
+// the API request and response. The error return value is used to indicate any
+// errors that occurred while executing the request.
 func (a *Application) GetServer(id int, opts ...options.GetServerOptions) (*AppServer, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -375,6 +433,11 @@ func (a *Application) GetServer(id int, opts ...options.GetServerOptions) (*AppS
 	return model.Attributes.getServer(), nil
 }
 
+// GetServerExternal retrieves a Server object by its external ID, with its related
+// allocations, user, subusers, location, node, nest, egg, variables, and databases
+// resolved. The function takes a variable number of options, which are used to
+// customize the API request and response. The error return value is used to
+// indicate any errors that occurred while executing the request.
 func (a *Application) GetServerExternal(id string, opts ...options.GetServerOptions) (*AppServer, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -430,6 +493,7 @@ type CreateServerDescriptor struct {
 	StartOnCompletion bool                   `json:"start_on_completion,omitempty"`
 }
 
+// CreateServer creates a new server from the given descriptor. At least one of Allocation or Deploy must be specified.
 func (a *Application) CreateServer(fields CreateServerDescriptor) (*AppServer, error) {
 	if fields.Allocation == nil && fields.Deploy == nil {
 		return nil, errors.New("the allocation object or deploy object must be specified")
@@ -469,6 +533,10 @@ type ServerBuildDescriptor struct {
 	FeatureLimits     FeatureLimits `json:"feature_limits,omitempty"`
 }
 
+// UpdateServerBuild updates the build parameters of a server. The fields parameter
+// must include at least one of Allocation, OOMDisabled, Limits, AddAllocations,
+// RemoveAllocations, or FeatureLimits. The function returns the updated server
+// object if successful.
 func (a *Application) UpdateServerBuild(id int, fields ServerBuildDescriptor) (*AppServer, error) {
 	data, _ := json.Marshal(fields)
 	if len(data) == 2 {
@@ -506,6 +574,17 @@ type ServerDetailsDescriptor struct {
 	Description string `json:"description,omitempty"`
 }
 
+// UpdateServerDetails updates the details of a server using the specified server ID and
+// details descriptor. It sends a PATCH request to the Pterodactyl API, which updates
+// the server's external ID, name, user, or description based on the provided fields.
+//
+// Parameters:
+//   - id: The ID of the server to be updated.
+//   - fields: A ServerDetailsDescriptor containing the fields to be updated.
+//
+// Returns:
+//   - A pointer to the updated AppServer object.
+//   - An error if the request fails, if the response cannot be parsed, or if no details fields are specified.
 func (a *Application) UpdateServerDetails(id int, fields ServerDetailsDescriptor) (*AppServer, error) {
 	data, _ := json.Marshal(fields)
 	if len(data) == 2 {
@@ -544,6 +623,13 @@ type ServerStartupDescriptor struct {
 	SkipScripts bool                   `json:"skip_scripts"`
 }
 
+// UpdateServerStartup updates the startup configuration of the server with the specified ID using the provided fields.
+//
+//   - An integer ID representing the server to be updated.
+//   - A ServerStartupDescriptor struct with the fields to be updated.
+//   - If no fields are specified, it returns an error.
+//   - The function makes a PATCH request to the API, and on success, returns a pointer to the updated AppServer object.
+//   - If any errors occur during the request or response processing, an error is returned.
 func (a *Application) UpdateServerStartup(id int, fields ServerStartupDescriptor) (*AppServer, error) {
 	data, _ := json.Marshal(fields)
 	if len(data) == 2 {
@@ -574,6 +660,10 @@ func (a *Application) UpdateServerStartup(id int, fields ServerStartupDescriptor
 	return &model.Attributes, nil
 }
 
+// SuspendServer suspends the server with the specified ID, effectively stopping
+// it but not deallocating its resources. The function makes a POST request to the
+// API, and on success, returns nil. If any errors occur during the request or
+// response processing, an error is returned.
 func (a *Application) SuspendServer(id int) error {
 	req := a.newRequest("POST", fmt.Sprintf("/servers/%d/suspend", id), nil)
 	res, err := a.Http.Do(req)
@@ -585,6 +675,9 @@ func (a *Application) SuspendServer(id int) error {
 	return err
 }
 
+// UnsuspendServer resumes the operation of a previously suspended server with the specified ID.
+// The function makes a POST request to the API to unsuspend the server, allowing it to run again.
+// It returns nil if successful, or an error if any issues occur during the request or response processing.
 func (a *Application) UnsuspendServer(id int) error {
 	req := a.newRequest("POST", fmt.Sprintf("/servers/%d/unsuspend", id), nil)
 	res, err := a.Http.Do(req)
@@ -596,6 +689,9 @@ func (a *Application) UnsuspendServer(id int) error {
 	return err
 }
 
+// ReinstallServer reinstalls the server with the specified ID, resetting its configuration to the egg defaults.
+// The function makes a POST request to the API, and on success, returns nil. If any errors occur during the request or
+// response processing, an error is returned.
 func (a *Application) ReinstallServer(id int) error {
 	req := a.newRequest("POST", fmt.Sprintf("/servers/%d/reinstall", id), nil)
 	res, err := a.Http.Do(req)
@@ -607,6 +703,7 @@ func (a *Application) ReinstallServer(id int) error {
 	return err
 }
 
+// DeleteServer deletes the server with the specified ID. If the force argument is true, it will delete the server even if it is not in a stopped state. The function makes a DELETE request to the API, and on success, returns nil. If any errors occur during the request or response processing, an error is returned.
 func (a *Application) DeleteServer(id int, force bool) error {
 	url := fmt.Sprintf("/servers/%d", id)
 	if force {

@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/m41denx/alligator/options"
 	"time"
+
+	"github.com/m41denx/alligator/options"
 )
 
 type Location struct {
@@ -34,6 +35,8 @@ type ResponseLocation struct {
 	}
 }
 
+// getLocation fetches the nested nodes and servers and returns a fully populated
+// *Location.
 func (r *ResponseLocation) getLocation() *Location {
 	loc := r.Location
 	loc.Nodes = make([]*Node, 0)
@@ -47,6 +50,15 @@ func (r *ResponseLocation) getLocation() *Location {
 	return loc
 }
 
+// ListLocations retrieves a list of Location objects from the Pterodactyl API, with
+// the option to include related nodes and servers.
+//
+// The opts argument is a variable length argument of options.ListLocationsOptions
+// structs. These options are used to customize the API request and response.
+//
+// The function returns a slice of Location objects, with their related nodes and
+// servers resolved. The error return value is used to indicate any errors that
+// occurred while executing the request.
 func (a *Application) ListLocations(opts ...options.ListLocationsOptions) ([]*Location, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -80,6 +92,14 @@ func (a *Application) ListLocations(opts ...options.ListLocationsOptions) ([]*Lo
 	return locs, nil
 }
 
+// GetLocation retrieves a Location object by its ID, with the option to include
+// related nodes and servers. The opts argument is a variable length argument of
+// options.GetLocationOptions structs. These options are used to customize the
+// API request and response.
+//
+// The function returns a single Location object, with its related nodes and
+// servers resolved. The error return value is used to indicate any errors that
+// occurred while executing the request.
 func (a *Application) GetLocation(id int, opts ...options.GetLocationOptions) (*Location, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -106,6 +126,14 @@ func (a *Application) GetLocation(id int, opts ...options.GetLocationOptions) (*
 	return model.Attributes.getLocation(), nil
 }
 
+// CreateLocation creates a new Location object.
+//
+// The function takes a short and long description of the location. The
+// descriptions are used to populate the short and long fields of the
+// Location object.
+//
+// The function returns a pointer to the newly created Location object, or an
+// error if the request fails.
 func (a *Application) CreateLocation(short, long string) (*Location, error) {
 	data, _ := json.Marshal(map[string]string{"short": short, "long": long})
 	body := bytes.Buffer{}
@@ -132,6 +160,14 @@ func (a *Application) CreateLocation(short, long string) (*Location, error) {
 	return &model.Attributes, nil
 }
 
+// UpdateLocation updates the specified Location object.
+//
+// The function takes the ID of the Location to update, and a new short and
+// long description of the location. The descriptions are used to populate the
+// short and long fields of the Location object.
+//
+// The function returns a pointer to the updated Location object, or an error
+// if the request fails.
 func (a *Application) UpdateLocation(id int, short, long string) (*Location, error) {
 	data, _ := json.Marshal(map[string]string{"short": short, "long": long})
 	body := bytes.Buffer{}
@@ -158,6 +194,11 @@ func (a *Application) UpdateLocation(id int, short, long string) (*Location, err
 	return &model.Attributes, nil
 }
 
+// DeleteLocation deletes a Location object by its ID.
+//
+// The function takes the ID of the Location to delete.
+//
+// The function returns an error if the request fails.
 func (a *Application) DeleteLocation(id int) error {
 	req := a.newRequest("DELETE", fmt.Sprintf("/locations/%d", id), nil)
 	res, err := a.Http.Do(req)

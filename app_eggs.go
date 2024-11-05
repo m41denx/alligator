@@ -57,6 +57,11 @@ type EggStartup struct {
 	UserInteraction []string `json:"userInteraction,omitempty"`
 }
 
+// UnmarshalJSON is a custom unmarshaller for EggStartup to handle the situation where "userInteraction" is not present in the JSON.
+// If "userInteraction" is not present, it is assumed to be an empty array.
+// This custom unmarshaller is necessary because the default unmarshaller for slices in Go will return a nil slice if the slice is not present in the JSON.
+// This is a problem because the nil slice is not the same as an empty slice, and the nil slice will not be deserialized properly by the server.
+// By using a custom unmarshaller, we can ensure that the slice is always deserialized as an empty slice if it is not present in the JSON.
 func (e *EggStartup) UnmarshalJSON(b []byte) error {
 	var startup struct {
 		Done            string   `json:"done,omitempty"`
@@ -116,6 +121,8 @@ type ResponseNest struct {
 	} `json:"relationships"`
 }
 
+// getNest returns the nested Nest object, with it's relationships
+// resolved from the API response.
 func (r *ResponseNest) getNest() *Nest {
 	nest := r.Nest
 	nest.Eggs = make([]*Egg, 0)
@@ -129,6 +136,15 @@ func (r *ResponseNest) getNest() *Nest {
 	return nest
 }
 
+// ListNests retrieves a list of Nest objects from the Pterodactyl API, with
+// the option to include related servers and eggs.
+//
+// The opts argument is a variable length argument of options.ListNestsOptions
+// structs. These options are used to customize the API request and response.
+//
+// The function returns a slice of Nest objects, with their related servers and
+// eggs resolved. The error return value is used to indicate any errors that
+// occurred while executing the request.
 func (a *Application) ListNests(opts ...options.ListNestsOptions) ([]*Nest, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -164,6 +180,10 @@ func (a *Application) ListNests(opts ...options.ListNestsOptions) ([]*Nest, erro
 	return nests, nil
 }
 
+// GetNest returns a Nest object by its ID, with its related servers and eggs
+// resolved. The function takes a variable number of options, which are used to
+// customize the API request and response. The error return value is used to
+// indicate any errors that occurred while executing the request.
 func (a *Application) GetNest(nestID int, opts ...options.GetNestOptions) (*Nest, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -211,6 +231,10 @@ type ResponseEgg struct {
 	} `json:"relationships"`
 }
 
+// getEgg resolves and returns the Egg object from the ResponseEgg structure.
+// It sets up the relationships for Nest, Servers, and Variables by extracting
+// the respective attributes from the API response. This function ensures that
+// the Egg object is fully populated with its related entities.
 func (r *ResponseEgg) getEgg() *Egg {
 	egg := r.Egg
 	egg.NestObject = r.Relationships.Nest.Attributes
@@ -225,6 +249,15 @@ func (r *ResponseEgg) getEgg() *Egg {
 	return egg
 }
 
+// ListNestEggs retrieves a list of Egg objects from a Nest, with the option to
+// include related servers and variables.
+//
+// The opts argument is a variable length argument of options.ListEggsOptions
+// structs. These options are used to customize the API request and response.
+//
+// The function returns a slice of Egg objects, with their related servers and
+// variables resolved. The error return value is used to indicate any errors that
+// occurred while executing the request.
 func (a *Application) ListNestEggs(nestID int, opts ...options.ListEggsOptions) ([]*Egg, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -260,6 +293,14 @@ func (a *Application) ListNestEggs(nestID int, opts ...options.ListEggsOptions) 
 	return eggs, nil
 }
 
+// GetEgg returns a single Egg object by its ID, with its related servers and
+// variables resolved. The opts argument is a variable length argument of
+// options.GetEggOptions structs. These options are used to customize the API
+// request and response.
+//
+// The function returns a single Egg object, with its related servers and
+// variables resolved. The error return value is used to indicate any errors
+// that occurred while executing the request.
 func (a *Application) GetEgg(nestID, eggID int, opts ...options.GetEggOptions) (*Egg, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {

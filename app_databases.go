@@ -13,6 +13,7 @@ type DatabaseManager struct {
 	app *Application
 }
 
+// NewDatabaseManager returns a new DatabaseManager instance that allows to manage databases on a Pterodactyl panel.
 func NewDatabaseManager(app *Application) *DatabaseManager {
 	return &DatabaseManager{app: app}
 }

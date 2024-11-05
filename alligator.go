@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-const Version = "1.1.0"
+const Version = "1.2.0b"
 
 type Application struct {
 	PanelURL string

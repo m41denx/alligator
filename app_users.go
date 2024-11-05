@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/m41denx/alligator/options"
 	"time"
+
+	"github.com/m41denx/alligator/options"
 )
 
 type User struct {
@@ -24,10 +25,15 @@ type User struct {
 	Servers    []*AppServer `json:"-"`
 }
 
+// FullName returns the full name of the user by concatenating the first name
+// and last name with a space in between.
 func (u *User) FullName() string {
 	return u.FirstName + " " + u.LastName
 }
 
+// UpdateDescriptor returns a descriptor that can be used to update the current
+// user. All of the fields on the descriptor are optional and will be ignored
+// if they are not provided.
 func (u *User) UpdateDescriptor() *UpdateUserDescriptor {
 	return &UpdateUserDescriptor{
 		ExternalID: u.ExternalID,
@@ -40,6 +46,12 @@ func (u *User) UpdateDescriptor() *UpdateUserDescriptor {
 	}
 }
 
+// ListUsers retrieves a list of User objects from the Pterodactyl API, with the
+// option to include related servers. The opts argument is a variable length
+// argument of options.ListUsersOptions structs, which are used to customize the
+// API request and response. The function returns a slice of User objects, with
+// their related servers resolved, and an error return value to indicate any
+// errors that occurred while executing the request.
 func (a *Application) ListUsers(opts ...options.ListUsersOptions) ([]*User, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -87,6 +99,10 @@ func (a *Application) ListUsers(opts ...options.ListUsersOptions) ([]*User, erro
 	return users, nil
 }
 
+// GetUser retrieves a User object by its ID, with its related servers resolved.
+// The function takes a variable number of options, which are used to customize
+// the API request and response. The error return value is used to indicate any
+// errors that occurred while executing the request.
 func (a *Application) GetUser(id int, opts ...options.GetUserOptions) (*User, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -128,6 +144,10 @@ func (a *Application) GetUser(id int, opts ...options.GetUserOptions) (*User, er
 	return user, nil
 }
 
+// GetUserExternal retrieves a User object by its external ID, with its related
+// servers resolved. The function takes a variable number of options, which are
+// used to customize the API request and response. The error return value is used
+// to indicate any errors that occurred while executing the request.
 func (a *Application) GetUserExternal(id string, opts ...options.GetUserOptions) (*User, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
@@ -179,6 +199,10 @@ type CreateUserDescriptor struct {
 	RootAdmin  bool   `json:"root_admin,omitempty"`
 }
 
+// CreateUser sends a POST request to create a new user with the specified fields.
+// The fields parameter is a CreateUserDescriptor containing details about the
+// user. The function returns a pointer to the newly created User object, or an
+// error if the request fails.
 func (a *Application) CreateUser(fields CreateUserDescriptor) (*User, error) {
 	data, _ := json.Marshal(fields)
 	body := bytes.Buffer{}
@@ -216,6 +240,9 @@ type UpdateUserDescriptor struct {
 	RootAdmin  bool   `json:"root_admin,omitempty"`
 }
 
+// UpdateUser sends a PATCH request to update the user with the specified ID using the provided fields.
+// The fields parameter is a UpdateUserDescriptor containing details about the user. The function returns a pointer
+// to the updated User object, or an error if the request fails.
 func (a *Application) UpdateUser(id int, fields UpdateUserDescriptor) (*User, error) {
 	data, _ := json.Marshal(fields)
 	body := bytes.Buffer{}
@@ -242,6 +269,8 @@ func (a *Application) UpdateUser(id int, fields UpdateUserDescriptor) (*User, er
 	return &model.Attributes, nil
 }
 
+// DeleteUser sends a DELETE request to remove the user with the specified ID.
+// The function returns an error if the request fails.
 func (a *Application) DeleteUser(id int) error {
 	req := a.newRequest("DELETE", fmt.Sprintf("/users/%d", id), nil)
 	res, err := a.Http.Do(req)
