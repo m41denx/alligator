@@ -42,6 +42,7 @@ type AppServer struct {
 	NestObject  *Nest          `json:"-"`
 	EggObject   *Egg           `json:"-"`
 	Variables   []*EggVariable `json:"-"`
+	Databases   []*Database    `json:"-"` // Добавляем поле для баз данных
 }
 
 func (s *AppServer) BuildDescriptor() *ServerBuildDescriptor {
@@ -278,6 +279,11 @@ type ResponseServer struct {
 				Attributes *EggVariable `json:"attributes"`
 			} `json:"data"`
 		} `json:"variables"`
+		Databases struct { // Добавляем структуру для баз данных
+			Data []struct {
+				Attributes *Database `json:"attributes"`
+			} `json:"data"`
+		} `json:"databases"`
 	} `json:"relationships"`
 }
 
@@ -299,6 +305,10 @@ func (r *ResponseServer) getServer() *AppServer {
 	server.Variables = make([]*EggVariable, 0)
 	for _, v := range r.Relationships.Variables.Data {
 		server.Variables = append(server.Variables, v.Attributes)
+	}
+	server.Databases = make([]*Database, 0) // Инициализируем слайс баз данных
+	for _, d := range r.Relationships.Databases.Data {
+		server.Databases = append(server.Databases, d.Attributes)
 	}
 	return server
 }
@@ -339,7 +349,10 @@ func (a *Application) ListServers(opts ...options.ListServersOptions) ([]*AppSer
 func (a *Application) GetServer(id int, opts ...options.GetServerOptions) (*AppServer, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
-		o = options.ParseRequestOptions(&opts[0])
+		opt := opts[0]
+		// Включаем загрузку баз данных
+		opt.Include.Databases = true
+		o = options.ParseRequestOptions(&opt)
 	}
 	req := a.newRequest("GET", fmt.Sprintf("/servers/%d?%s", id, o), nil)
 	res, err := a.Http.Do(req)
