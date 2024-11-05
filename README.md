@@ -55,10 +55,10 @@ package main
 **More examples at [📁 _examples](_examples)**
 
 ## 📝 What's done?
-- [ ] App API
+- [X] App API
   - [X] Options
-  - [ ] Database endpoint support
-    - [ ] Extended databases details (password, host)
+  - [X] Database endpoint support [TESTING]
+    - [X] Extended databases details (password, host) [TESTING]
   - [X] Nests endpoint support
     - [X] Extended nest details (eggs, servers)
   - [X] Eggs endpoint support
