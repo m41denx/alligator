@@ -66,7 +66,9 @@ func (s *AppServer) BuildDescriptor() *ServerBuildDescriptor {
 // This descriptor is used to initialize or modify server details.
 func (s *AppServer) DetailsDescriptor() *ServerDetailsDescriptor {
 	return &ServerDetailsDescriptor{
-		ExternalID:  s.ExternalID,
+		ExternalID: s.ExternalID,
+		// Guess who's back?
+		Name:        s.Name,
 		User:        s.UserID,
 		Description: s.Description,
 	}
@@ -148,7 +150,7 @@ func (r *ResponseDatabase) getDatabase() *Database {
 func (a *Application) ListDatabases(serverID int, opts ...options.ListDatabasesOptions) ([]*Database, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
-		o = options.ParseRequestOptions(opts[0].GetOptions()) // было getOptions
+		o = options.ParseRequestOptions(&opts[0]) // было getOptions
 	}
 	req := a.newRequest("GET", fmt.Sprintf("/servers/%d/databases?%s", serverID, o), nil)
 	res, err := a.Http.Do(req)
@@ -176,45 +178,6 @@ func (a *Application) ListDatabases(serverID int, opts ...options.ListDatabasesO
 	}
 
 	return databases, nil
-}
-
-// GetDatabase retrieves a Database object by its server and database IDs,
-// with the option to include related fields and customize the API request.
-// The opts argument is a variable length argument of options.GetDatabaseOptions
-// structs, which allows for the inclusion of additional fields and filtering.
-//
-// Parameters:
-//   - serverID: The ID of the server associated with the database.
-//   - databaseID: The ID of the database to retrieve.
-//   - opts: Variadic GetDatabaseOptions for customizing the request.
-//
-// Returns:
-//   - A pointer to the Database object representing the requested database.
-//   - An error if the request fails or the response cannot be parsed.
-func (a *Application) GetDatabase(serverID, databaseID int, opts ...options.GetDatabaseOptions) (*Database, error) {
-	var o string
-	if opts != nil && len(opts) > 0 {
-		o = options.ParseRequestOptions(opts[0].GetOptions()) // было getOptions
-	}
-	req := a.newRequest("GET", fmt.Sprintf("/servers/%d/databases/%d?%s", serverID, databaseID, o), nil)
-	res, err := a.Http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	buf, err := validate(res)
-	if err != nil {
-		return nil, err
-	}
-
-	var model struct {
-		Attributes ResponseDatabase `json:"attributes"`
-	}
-	if err = json.Unmarshal(buf, &model); err != nil {
-		return nil, err
-	}
-
-	return model.Attributes.getDatabase(), nil
 }
 
 // CreateDatabaseOptions represents the options for creating a new database

@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Базовая структура - просто хранит данные
 type requestOptions struct {
 	Include    interface{}
 	Filters    interface{}
@@ -14,11 +15,7 @@ type requestOptions struct {
 	SortBy     string
 }
 
-// getOptions implements options.
-func (r *requestOptions) getOptions() *requestOptions {
-	panic("unimplemented")
-}
-
+// Интерфейс который реализуют ДРУГИЕ типы, но не requestOptions
 type options interface {
 	getOptions() *requestOptions
 }

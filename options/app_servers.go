@@ -13,13 +13,44 @@ type IncludeServers struct {
 	Databases   bool `param:"databases"`   // List of databases on the server
 }
 
+type DatabaseFilters struct {
+	Name     string // Not "uwu_database_1"
+	ServerID string // Please use real ID, not "1337"
+}
+
+type ServerFilters struct {
+	Name       string // Server name (no, "mega_server_9000" is not okay)
+	ExternalID string // External ID from... somewhere
+	UUID       string // Unique ID (yes, more IDs!)
+}
+
+// Parameters - the fun continues
+type DatabaseParameters struct {
+	Host     string // Where the magic happens
+	Username string // No, "admin123" is not secure
+}
+
+type ServerParameters struct {
+	Owner bool // Is it yours? Really?
+	Stats bool // How bad is CPU usage?
+}
+
+// ListDatabasesOptions holds all available params for listing databases
+// Does not include admin's coffee preferences (yet)
 type ListDatabasesOptions struct {
-	Include IncludeDatabases // Included Databases
-	Fields  string           // Fields in Database
-	Filter  string           // Filtering
-	Sort    string           // Sorting
-	PerPage int              // PerPage (goofy ahh limit)
-	Page    int              // Page
+	requestOptions
+	Include IncludeDatabases
+}
+
+// getOptions returns requestOptions from ListDatabasesOptions
+// TLDR: yeet the options into standard format
+func (o *ListDatabasesOptions) getOptions() *requestOptions {
+	return &requestOptions{
+		Include:    o.Include,
+		Filters:    nil,
+		Parameters: nil,
+		SortBy:     "",
+	}
 }
 
 type IncludeDatabases struct {
@@ -33,6 +64,12 @@ func (o *ListDatabasesOptions) GetOptions() *requestOptions {
 }
 
 type GetDatabaseOptions ListDatabasesOptions
+
+func (o *GetDatabaseOptions) getOptions() *requestOptions {
+	return &requestOptions{
+		Include: o.Include,
+	}
+}
 
 func (o *GetDatabaseOptions) GetOptions() *requestOptions {
 	return &requestOptions{

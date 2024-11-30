@@ -35,7 +35,7 @@ type DatabaseRotatePasswordResponse struct {
 func (dm *DatabaseManager) ListDatabases(serverID int, opts ...options.ListDatabasesOptions) ([]*Database, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
-		o = options.ParseRequestOptions(opts[0].GetOptions())
+		o = options.ParseRequestOptions(&opts[0])
 	}
 
 	req := dm.app.newRequest("GET", fmt.Sprintf("/servers/%d/databases?%s", serverID, o), nil)
@@ -70,7 +70,7 @@ func (dm *DatabaseManager) ListDatabases(serverID int, opts ...options.ListDatab
 func (dm *DatabaseManager) GetDatabase(serverID, databaseID int, opts ...options.GetDatabaseOptions) (*Database, error) {
 	var o string
 	if opts != nil && len(opts) > 0 {
-		o = options.ParseRequestOptions(opts[0].GetOptions())
+		o = options.ParseRequestOptions(&opts[0])
 	}
 
 	req := dm.app.newRequest("GET", fmt.Sprintf("/servers/%d/databases/%d?%s", serverID, databaseID, o), nil)
@@ -287,7 +287,7 @@ func (dm *DatabaseManager) GetDatabaseBackup(serverID, databaseID int, backupID 
 	return &model.Data.Attributes, nil
 }
 
-// Deleting DatabaseBackup
+// DeleteDatabaseBackup is deleting databse backup, what else can it do?
 func (dm *DatabaseManager) DeleteDatabaseBackup(serverID, databaseID int, backupID string) error {
 	req := dm.app.newRequest("DELETE", fmt.Sprintf("/servers/%d/databases/%d/backups/%s", serverID, databaseID, backupID), nil)
 	res, err := dm.app.Http.Do(req)
@@ -297,4 +297,31 @@ func (dm *DatabaseManager) DeleteDatabaseBackup(serverID, databaseID int, backup
 
 	_, err = validate(res)
 	return err
+}
+
+// GetDatabase retrieves a Database object by its server and database IDs
+func (a *Application) GetDatabase(serverID, databaseID int, opts ...options.GetDatabaseOptions) (*Database, error) {
+	var o string
+	if opts != nil && len(opts) > 0 {
+		o = options.ParseRequestOptions(&opts[0])
+	}
+	req := a.newRequest("GET", fmt.Sprintf("/servers/%d/databases/%d?%s", serverID, databaseID, o), nil)
+	res, err := a.Http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := validate(res)
+	if err != nil {
+		return nil, err
+	}
+
+	var model struct {
+		Attributes ResponseDatabase `json:"attributes"`
+	}
+	if err = json.Unmarshal(buf, &model); err != nil {
+		return nil, err
+	}
+
+	return model.Attributes.getDatabase(), nil
 }
