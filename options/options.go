@@ -15,7 +15,6 @@ type requestOptions struct {
 	SortBy     string
 }
 
-// Интерфейс который реализуют ДРУГИЕ типы, но не requestOptions
 type options interface {
 	getOptions() *requestOptions
 }
